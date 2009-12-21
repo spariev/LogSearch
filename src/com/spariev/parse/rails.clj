@@ -34,12 +34,7 @@
                 (rep+ decimal-digit)))
 
 
-(http-method {:remainder (seq "[GET]")})
-(result-format {:remainder (seq "xml")})
-(ip-addr {:remainder (seq "192.168.212.244")})
-(datetime-lit {:remainder (seq "2009-12-10 04:59:43")})
-
-(defstruct state-s :remainder :column :line)
+(defstruct state-s :remainder)
 
 (def remainder-a
   (accessor state-s :remainder))

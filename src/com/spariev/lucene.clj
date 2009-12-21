@@ -58,26 +58,11 @@
 (defn index-dir [idx]
   (FSDirectory/open (new java.io.File idx)))
 
-(defn index-log-chunk [idx req-id log-chunk]
-  (try
-   (let [idx-dir (index-dir idx)]
-   (IndexWriter/unlock idx-dir)
-     (with-open [#^IndexWriter writer (prepare-lucene-index idx-dir)]
-           (doall
-                     (try (.addDocument writer (parse-log-chunk req-id log-chunk))
-                          (catch java.io.FileNotFoundException e
-                            (.println System/err "Oops.  Lost it"))))
-           ))
-   (catch Exception e
-     (.println System/err (str "Exception while : " e))
-     [])))
-
-
 (defn build-query [searchstr]
   (let [all-fields (.parse (doto (MultiFieldQueryParser. org.apache.lucene.util.Version/LUCENE_30
                                       (into-array String ["header" "body"])
                                       (StandardAnalyzer. org.apache.lucene.util.Version/LUCENE_30))
-                             (.setDefaultOperator QueryParser$Operator/AND))
+                             (.setDefaultOperator QueryParser$Operator/OR))
                            searchstr)]
     (.setBoost all-fields 20)
     all-fields
