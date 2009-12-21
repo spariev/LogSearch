@@ -1,0 +1,15 @@
+TODO
+
+======
+
+-  lay out struct for request log chunk
+-  parse request header/footer, save them to db/lucene
+-  refactor namespaces
+-  minimal webapp with search interface
+-  indexer configs
+
+LATER
+
+======
+
+-  incanter
