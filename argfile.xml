@@ -1,5 +1,8 @@
- <arg value = "com.spariev.logsearch" /> 
+ <arg value = "com.spariev.db" /> 
+<arg value = "com.spariev.logsearch" /> 
+<arg value = "com.spariev.lucene" /> 
 <arg value = "com.spariev.parse.common" /> 
+<arg value = "com.spariev.parse.file" /> 
 <arg value = "com.spariev.parse.rails" /> 
 <arg value = "name.choi.joshua.fnparse" /> 
 <arg value = "name.choi.joshua.fnparse.json"/>
