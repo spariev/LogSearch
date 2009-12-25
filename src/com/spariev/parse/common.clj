@@ -20,7 +20,6 @@
 (def ignored-words-lit (alt (word-lit "to") (word-lit "for") (word-lit "at")))
 
 (def processing (constant-semantics (word-lit "Processing") :processing))
-(def completed  (constant-semantics (word-lit "Completed in") :completed))
 
 (def ws (constant-semantics (rep* (alt ignored-words-lit (lit \|) (lit \() (lit \)) space-lit tab-lit )) :ws))
 

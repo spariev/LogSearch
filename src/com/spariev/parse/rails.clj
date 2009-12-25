@@ -11,7 +11,6 @@
 
 (def test-string "Processing EpisodesController#first_unapproved to xml (for 192.168.212.244 at 2009-12-10 04:59:43) [GET]")
 
-
 (def minus-lit (lit \-))
 (def colon-lit (lit \:))
 
@@ -41,50 +40,8 @@
                 (rep+ decimal-digit))]
                 (to-str datetime-parsed)))
 
-(def line-datetime
-  (complex [datetime-parsed (conc
-                (rep+ decimal-digit) minus-lit
-                (rep+ decimal-digit) minus-lit
-                (rep+ decimal-digit) space-lit
-                (rep+ decimal-digit) colon-lit
-                (rep+ decimal-digit) colon-lit
-                (rep+ decimal-digit))
-            _  dec-point
-            _  (rep+ decimal-digit)]
-                (to-str datetime-parsed)))
-
 (def completed-string
   "18112: 2009-12-10 04:59:43.108943 | Completed in 405ms (View: 1, DB: 15) | 422 Unprocessable Entity [http://admin.telemarker.home/episodes/first_unapproved.xml?lang=ru] ")
-
-(def process-id
-  (semantics (rep+ (except decimal-digit colon-lit)) to-str))
-(def duration
-  (semantics (rep+ (except decimal-digit (word-lit "ms"))) to-str))
-
-(def view-duration
-  (complex [ _        (word-lit "View: ")
-             view-dur (rep+ decimal-digit)
-             _        (lit \,)]
-    (to-str view-dur)))
-
-(def db-duration
-  (complex [ _      (word-lit "DB: ")
-             db-dur (rep+ decimal-digit)
-             _      (lit \))]
-    (to-str db-dur)))
-
-(def http-code
-  (semantics (rep+ decimal-digit) to-str))
-
-(def http-code-desc
-  (semantics (rep+ (except anything (lit \[))) to-str))
-
-(def full-url
-  (complex [ _        (lit \[)
-             url (rep+ (except anything (lit \])))
-             _        (lit \])]
-    (to-str url)))
-
 
 ;(def completed-line-rule
 ;  (conc process-id line-datetime ws completed ws duration ws view-duration
@@ -105,9 +62,49 @@
 (def processing-line-rule
   (conc processing ws controller-and-method ws result-format ws ip-addr ws datetime ws http-method))
 
-(def completed-line-rule
-  (conc process-id colon-lit ws line-datetime ws completed ws duration (word-lit "ms") ws
-    view-duration ws db-duration ws http-code ws http-code-desc full-url ws))
+(def digits
+  (rep+ decimal-digit))
+(def datetime-lit
+  (conc
+                (rep+ decimal-digit) minus-lit
+                (rep+ decimal-digit) minus-lit
+                (rep+ decimal-digit) space-lit
+                (rep+ decimal-digit) colon-lit
+                (rep+ decimal-digit) colon-lit
+                (rep+ decimal-digit)))
+
+
+(def completed-rule-complex
+  (complex [ process-id digits
+             _           (lit \:)
+             _           ws
+             datetime    datetime-lit
+             _           dec-point
+             _           digits
+             _           ws
+             _           (word-lit "Completed in")
+             _           ws
+             duration    digits
+             _           (word-lit "ms")
+             _           ws
+             _           (word-lit "View: ")
+             view-dur    digits
+             _           (lit \,)
+             _           ws
+             _           (word-lit "DB: ")
+             db-dur      digits
+             _           (lit \))
+             _           ws
+             http-code   digits
+             _           ws
+             http-code-desc (rep+ (except anything (lit \[)))
+             _           (lit \[)
+             full-url    (rep+ (except anything (lit \])))
+             _           (lit \])
+             _           ws
+             ]
+    { :process-id process-id :end-time datetime :duration duration
+      :view-duration view-dur :db-duration db-dur :http-code http-code :url full-url }))
 
 (defn parse-line [line-str line-rule]
     (rule-match line-rule inv-doc-fn data-left-fn (struct state-s (seq line-str))))
