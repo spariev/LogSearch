@@ -28,7 +28,7 @@
       (org.apache.lucene.index.IndexWriter/unlock idx-dir)
       (somnium.congomongo/mongo! :db *db-name*)
       (with-open [#^org.apache.lucene.index.IndexWriter writer (prepare-lucene-index idx-dir)]
-	(doall (pmap (partial process-request-log writer)
+	(doall (map (partial process-request-log writer)
 		     (partition-by
 		      #(if (. % startsWith "Processing")
 			 (dosync (alter req-counter inc))
