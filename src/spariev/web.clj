@@ -18,14 +18,15 @@
 
 (defn format-search-hit
   [search-result]
-  (do
-    (println search-result)
-    (let
-	[request (fetch-one :railslogs :where {:_id (first search-res) })]
+  (let
+      [request-rec (fetch-one :railslogs :where { :_id (com.mongodb.ObjectId. (first search-result)) })]
+    (do
+      #_(println search-result)
+      #_(println request-rec)
       [:div
-       [:p (request :hdr)]
-       [:p (request :parsed-hdr)]
-       [:p (request :body)]])))
+       [:p (request-rec :hdr)]
+       [:p (request-rec :parsed-hdr)]
+       [:p (request-rec :body)]])))
 
 (defn search-handler
   [request]
@@ -33,7 +34,7 @@
     (somnium.congomongo/mongo! :db *db-name*)
     (let [search-results (search *index-filename* ((request :params) :query))]
       (html
-       (doall (map format-search-result search-results))))))
+       (doall (map format-search-hit search-results))))))
 
 (decorate search-handler (with-logging))
 

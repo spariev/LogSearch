@@ -1,4 +1,4 @@
 (ns spariev.config)
 
-(def *db-name* "logsearch-dev")
+(def *db-name* "logsearch_dev")
 (def *index-filename* "tmp/dev/lucene-idx")
