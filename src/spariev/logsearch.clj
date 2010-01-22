@@ -1,7 +1,7 @@
 (comment
 Sample clojure source file
 )
-(ns com.spariev.logsearch
+(ns spariev.logsearch
     (:gen-class))
 
 (defn -main

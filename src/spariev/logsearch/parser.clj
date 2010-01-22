@@ -1,6 +1,6 @@
-
-(ns com.spariev.parse.rails
-  (:use com.spariev.parse.common name.choi.joshua.fnparse clojure.contrib.error-kit
+(ns spariev.logsearch.parser
+  (:use name.choi.joshua.fnparse
+	clojure.contrib.error-kit
         [clojure.contrib.seq-utils :only [flatten]]))
 
 (defn to-str [a-seq]
@@ -43,7 +43,7 @@
              _               (lit \#)
              method-name     (rep+ (except anything space-lit))
              _               ws
-             result-format   (alt (word-lit "xml") (word-lit "html") (word-lit "xls"))
+             result-format   (alt (word-lit "xml") (word-lit "json") (word-lit "yml") (word-lit "html") (word-lit "xls") ws)
              _               ws
              ip-addr         ip-addr-lit
              _               ws
@@ -94,7 +94,7 @@
 
 
 (defn inv-doc-fn [state]
-  (println "invalid document \"%s\""   (to-str (remainder-a state))))
+  (println "invalid document \"%s\"" (to-str (remainder-a state))))
 
 (defn data-left-fn [data-left state]
   (println "leftover data after a valid node \"%s\"" (to-str (remainder-a state))))
@@ -102,8 +102,8 @@
 (defn parse-line [line-rule line-str]
     (rule-match line-rule inv-doc-fn data-left-fn (struct state-s (seq line-str))))
 
-(defn parse-processed-line
-  (partial parse-line processed-rule-complex))
+;(defn parse-processed-line
+;  (partial parse-line processed-rule-complex))
 
-(defn parse-completed-line
-  (partial parse-line completed-rule-complex))
+;(defn parse-completed-line
+;  (partial parse-line completed-rule-complex))

@@ -1,4 +1,4 @@
-(ns com.spariev.lucene
+(ns spariev.logsearch.lucene
   (:import (org.apache.lucene.index IndexReader IndexWriter
                                     IndexWriter$MaxFieldLength Term)
            (org.apache.lucene.search IndexSearcher BooleanQuery
@@ -15,14 +15,14 @@
            (java.util Calendar Date SimpleTimeZone)
            (java.text SimpleDateFormat)
            (java.io File))
-  (:use clojure.contrib.duck-streams
+  (:use [spariev.config :as config]
+	clojure.contrib.duck-streams
         clojure.contrib.str-utils
         clojure.contrib.seq-utils
         clojure.contrib.def))
 
 
 ;;; Utility functions
-(def *index-filename* "/Users/user/tmp/rails-log-idx")
 
 (defn get-field [#^Document doc field]
   "Return the first value for a given field from a Lucene document."
