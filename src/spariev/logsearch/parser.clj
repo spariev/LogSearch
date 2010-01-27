@@ -36,6 +36,7 @@
     space-lit
     digits colon-lit digits colon-lit digits))
 
+;Processing EpisodesController#first_unapproved to xml (for 192.168.212.244 at 2009-12-10 04:59:43) [GET]
 (def processing-rule-complex
   (complex [ _               (word-lit "Processing")
              _               ws
@@ -55,6 +56,19 @@
     {:start-time (to-str req-time) :controller (to-str controller-name) :method (to-str method-name)
      :remote-addr (to-str ip-addr) :format (to-str result-format) :http-method (to-str http-method)})); TODO come up with more clever way to do it
 
+(def processing-rule-regexp
+     #"Processing ((?:\w+::)*\w+)#(\w+)(?: to (\w+))? \(for (\d+\.\d+\.\d+\.\d+) at (\d+-\d+-\d+ \d+:\d+:\d+)\) \[(.*)\]")
+
+(defn parse-line-regexp
+  [re line]
+  (let [matches (first (re-seq re line))
+	r-keys [:controller-name :method-name :result-format :ip-addr :req-time :http-method]]
+    (if (= 7 (count matches))
+      (zipmap r-keys (rest matches))
+      (do
+	(println (str "Invalid line " line))
+	{}))))
+ 
 (def completed-rule-complex
   (complex [ process-id digits
              _           (lit \:)

@@ -24,7 +24,7 @@
   (let [gridfs-file (pack-into-file :logsfs (rest req-lines))]    
     (insert! :railslogs
 	     {:hdr (first req-lines)
-	      :parsed-hdr (parse-line processing-rule-complex (first req-lines))
+	      :parsed-hdr (parse-line-regexp processing-rule-regexp (first req-lines))
 	      :file_id (str(gridfs-file :_id))})))
 
 (defn process-request-log [index-writer log-chunk]
