@@ -25,8 +25,8 @@
       #_(println request-rec)
       [:div
        [:p (request-rec :hdr)]
-       [:p (request-rec :parsed-hdr)]
-       [:p (request-rec :body)]])))
+       #_[:p (request-rec :parsed-hdr)]
+       [:p [:code (request-rec :body)]]])))
 
 (defn search-handler
   [request]

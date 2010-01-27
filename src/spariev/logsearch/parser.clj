@@ -43,7 +43,7 @@
              _               (lit \#)
              method-name     (rep+ (except anything space-lit))
              _               ws
-             result-format   (alt (word-lit "xml") (word-lit "json") (word-lit "yml") (word-lit "html") (word-lit "xls") ws)
+             result-format   (alt (word-lit "text") (word-lit "xml") (word-lit "json") (word-lit "yml") (word-lit "html") (word-lit "xls") ws)
              _               ws
              ip-addr         ip-addr-lit
              _               ws
