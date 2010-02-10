@@ -45,7 +45,7 @@
       (somnium.congomongo/mongo! :db db-name)
       (with-open [#^org.apache.lucene.index.IndexWriter writer (prepare-lucene-index idx-dir)]
 	(do
-	  (parse-file-with-writer writer filename)
+	  (index-file-with-writer writer filename)
 	  (println "Indexing is over"))))))
 
 
@@ -60,9 +60,9 @@
 	idx-dir (index-dir idx-dir-fname) ]
     (do
       (org.apache.lucene.index.IndexWriter/unlock idx-dir)
-      (somnium.congomongo/mongo! :db *db-name*)
+      (somnium.congomongo/mongo! :db (db-name-for-config config-id))
       (with-open [#^org.apache.lucene.index.IndexWriter writer (prepare-lucene-index idx-dir)]
-	(doall (pmap (partial parse-file-with-writer writer) fnames))
+	(doall (pmap (partial index-file-with-writer writer) fnames))
 	(println "Indexing is over")))))
 
 

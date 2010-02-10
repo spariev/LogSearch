@@ -1,7 +1,9 @@
-(ns spariev.logsearch.web  
+(ns spariev.web
   (:use spariev.config
 	spariev.logsearch.lucene
 	spariev.logsearch.fileparser
+	spariev.logsearch.db
+	spariev.logsearch.util
 	[spariev.chrono :as chrono]
 	compojure
 	somnium.congomongo))
@@ -39,9 +41,9 @@
 (defn do-search
   [config-id query]
   (do
-    (somnium.congomongo/mongo! :db *db-name*)
-    (let [search-results (spariev.config/bench "Lucene search " (search (idx-path-for-config config-id) query))]      
-      (spariev.config/bench "Rendering " (html
+    (somnium.congomongo/mongo! :db (db-name-for-config config-id))
+    (let [search-results (bench "Lucene search " (search (idx-path-for-config config-id) query))]
+      (bench "Rendering " (html
 					  [:div.results-count [:p (str (count search-results) " entries found")]]
        (doall (map (partial format-search-hit query) search-results)))))))
 
@@ -80,7 +82,8 @@
 
 (defn test-index
   [request]
-  (parse-sample-file "c:\\sample_logs\\log\\production.20100120.app10042.log" "db10042.log" "tmp\\10042"))
+  (index-file "c:\\sample_logs\\log\\production.20100120.app10042.log" "db10042" "tmp\\10042"))
+
 (defroutes search-routes
   (ANY "/search" search-form)
   (ANY "/idx" test-index)

@@ -1,7 +1,4 @@
-(ns spariev.logsearch.parser
-  (:use name.choi.joshua.fnparse
-	clojure.contrib.error-kit
-        [clojure.contrib.seq-utils :only [flatten]]))
+(ns spariev.logsearch.parser)
 
 (def processing-test-string "Processing EpisodesController#first_unapproved to xml (for 192.168.212.244 at 2009-12-10 04:59:43) [GET]")
 (def completed-test-string

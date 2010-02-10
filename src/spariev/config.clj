@@ -14,13 +14,19 @@
 		    :remote {:addr "app.home"
 			     :format "default"}}})
 
+(defn get-config
+  [config-id]
+  (*log-src* (keyword config-id)))
+
 (defn get-config-val
   [config-id key]
-  ((*log-src* (keyword config-id)) (keyword key) ))
+  ((get-config config-id) (keyword key) ))
 
 (defn idx-path-for-config
   [config-id]
-  (let [{:keys [server-id app-id]} (*log-src* (keyword config-id))]
+  (let [{:keys [server-id app-id]} (get-config config-id)]
     (str "tmp" path-sep (name server-id) path-sep (name app-id) path-sep "idx" )))
 
-
+(defn db-name-for-config
+  [config-id]
+  (name ((get-config config-id) :server-id)))
