@@ -84,7 +84,7 @@
 		       (if dirfile (.list dirfile) []))))
 	idx-dir-fname (idx-path-for-config config-id)
 	_ (println (str "=== indexing to " idx-dir-fname))
-	_ (println fnames)
+;;	_ (println fnames)
 	idx-dir (index-dir idx-dir-fname) ]
     (do
       (org.apache.lucene.index.IndexWriter/unlock idx-dir)

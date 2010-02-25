@@ -19,6 +19,7 @@
            (java.text SimpleDateFormat)
            (java.io File))
   (:use [spariev.config :as config]
+	[clojure.contrib.str-utils2 :as strutils :only [join blank?]]
 	spariev.logsearch.whitespacet
 	clojure.contrib.duck-streams
         clojure.contrib.str-utils
@@ -44,27 +45,26 @@
   "Create a tokenized, stored field."
   (Field. name val Field$Store/YES Field$Index/NOT_ANALYZED))
 
-(defn tokenized-field [name val]
+(defn tokenized-nonstored-field [name val]
   "Create a tokenized, stored field."
   (Field. name val Field$Store/NO Field$Index/ANALYZED))
 
 (defn tokenized-no-term-vector-field [name val]
-  "Create a tokenized, stored field."
+  "Create a tokenized, non-stored field with no term-vector info."
   (Field. #^String name #^String val Field$Store/NO Field$Index/ANALYZED Field$TermVector/NO))
 
 
 (defn load-body [#^Document doc [line & lines :as body]]
   "Add each line from body into our Lucene document."
-  (if (seq body)
-    (do (.add doc (tokenized-field "body" line))
-        (recur doc lines))
-    doc))
+  (if (seq lines)
+    (.add doc (tokenized-no-term-vector-field "body" (strutils/join " " lines))))
+    doc)
 
 (defn create-doc-from-chunk [req-id parsed-chunk]
   "Produce a Lucene document from single request log chunk"
       (let [#^Document doc (Document.)]
         (.add doc (stored-field "req-id" req-id))
-        (.add doc (tokenized-field "header" (:hdr parsed-chunk)))
+        (.add doc (tokenized-nonstored-field "header" (:hdr parsed-chunk)))
         (load-body doc (:content parsed-chunk))))
 
 (def *cleanup-analyzer*
