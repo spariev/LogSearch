@@ -65,6 +65,7 @@
      [:head "\n"
       [:title page-title] "\n"
       [:link {:href "/main.css" :rel "stylesheet" :type "text/css"} ]] "\n"
+      [:script {:type "text/javascript" :src "/jquery-1.4.1.min.js"}]
      [:body "\n"
       [:div.header
        [:h2 page-title]] "\n"
