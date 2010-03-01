@@ -16,3 +16,6 @@
       (write-file-to fs a-file byte-stream)
       (CompressionTools/decompressString (.toByteArray byte-stream)))))
 
+(defn fetch-by-id
+  [coll obj-id]
+  (fetch-one coll :where { :_id (com.mongodb.ObjectId. obj-id) }))

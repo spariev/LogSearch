@@ -7,6 +7,7 @@
 	[spariev.chrono :as chrono]
 	compojure
 	somnium.congomongo)
+  (:import (java.net URLEncoder))
   (:gen-class))
 
 #_(set! *warn-on-reflection* true)
@@ -28,19 +29,26 @@
   [config-id query search-result]
   (let
       [obj-id  (first search-result)
+       db-name (db-name-for-config config-id)
  ;      _ (println (str query " -> " obj-id " -> " (second search-result)))
-       request-rec (fetch-one (db-name-for-config config-id) :where { :_id (com.mongodb.ObjectId. obj-id) })
-;       #_ _ (println (str (request-rec :file_id)))
-       body-content (unpack-from-file (fs-name-for-config config-id) (request-rec :file_id))
-       highlighted-body (highlight body-content query)]
+       request-rec (fetch-by-id db-name obj-id)]
     (do
-      #_(println search-result)
-      #_(println request-rec)
       [:div
-       [:p (request-rec :hdr)]
-       #_[:p (request-rec :parsed-hdr)]
-       [:p [:pre highlighted-body]]])))
+       [:p (request-rec :hdr) [:a {:class "show-more-link" :href "#" :rel (str "/event/" config-id "/" obj-id "?query=" (URLEncoder/encode query "UTF-8") )} ;;"/" 
+	    "Show ..."]]       
+       [:p {:class "detailed-container" :style "visibility:hidden;"}	]])))
 
+(defn search-hit
+  "return html for highlighted body of specified request"
+  [request]
+  (let [{:keys [config-id query obj-id]} (request :params)
+	db-name (db-name-for-config config-id)
+	_      (somnium.congomongo/mongo! :db db-name)
+	req (fetch-by-id db-name obj-id)
+	body-content (unpack-from-file (fs-name-for-config config-id) (req :file_id))
+	highlighted-body (highlight body-content query)]    
+    (html [:pre highlighted-body])))
+  
 
 (defn do-search
   [config-id query]
@@ -65,7 +73,8 @@
      [:head "\n"
       [:title page-title] "\n"
       [:link {:href "/main.css" :rel "stylesheet" :type "text/css"} ]] "\n"
-      [:script {:type "text/javascript" :src "/jquery-1.4.1.min.js"}]
+     [:script {:type "text/javascript" :src "/jquery-1.4.1.min.js"}]
+     [:script {:type "text/javascript" :src "/search.js"}]
      [:body "\n"
       [:div.header
        [:h2 page-title]] "\n"
@@ -74,17 +83,19 @@
 
 (defn search-form
   [request]
-  (with-std-template "LogSearch"
-    [:div [:div.search
-	   (form-to
-	    [:post "/search"]
-	    [:p "config-id " (text-field {:size 10} :config-id)]
-	    [:p "query "     (text-field {:size 50} :query)]
-	    (submit-button "Query"))]
-     "\n" [:p (str (request :query)) ] "\n"
-    (when (-> request :params :query)
+  (let [config-id (-> request :params :config-id)
+	query (-> request :params :query)]
+    (with-std-template "LogSearch"
+      [:div [:div.search
+	     (form-to
+	      [:post "/search"]
+	      [:p "config-id " (text-field {:size 10 :value (or config-id "tmadmin")} :config-id)]
+	       [:p "query "     (text-field {:size 50  :value (or query "") } :query)]
+	       (submit-button "Query"))]
+     "\n" [:p query ] "\n"
+    (when query
       [:div.results
-       (do-search (-> request :params :config-id) (-> request :params :query)) ])]))
+       (do-search config-id query) ])])))
 
 
 (defn index-logs
@@ -104,10 +115,12 @@
 (decorate search-handler (with-logging))
 (decorate search-form (with-logging))
 (decorate index-logs (with-logging))
+(decorate search-hit (with-logging))
 
 (defroutes search-routes
   (ANY "/search" search-form)
   (ANY "/idx/:config-id/:date" index-logs)
+  (ANY "/event/:config-id/:obj-id" search-hit)
   (GET "/search/:config-id/:query" search-handler)
   (GET "/*" (or (serve-file (params :*)) :next))
   (ANY "/*" (do (println (str "Requested " (request :route-params))) 404)))
@@ -115,6 +128,3 @@
 (defn -main [& args]
   (run-server {:port 6060}
 	      "/*" (servlet search-routes)))
-
-
-  

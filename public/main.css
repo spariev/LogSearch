@@ -1,3 +1,7 @@
 .hlight {
     background: yellow;
 }
+
+.hidden {
+  display: none;
+}
