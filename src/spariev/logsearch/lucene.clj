@@ -1,7 +1,7 @@
 (ns spariev.logsearch.lucene
   (:import (org.apache.lucene.index IndexReader IndexWriter
                                     IndexWriter$MaxFieldLength Term)
-           (org.apache.lucene.search IndexSearcher BooleanQuery
+           (org.apache.lucene.search Query IndexSearcher BooleanQuery
                                      PhraseQuery BooleanClause$Occur TermQuery)
            (org.apache.lucene.document Document Field Field$Store
                                        Field$Index Field$TermVector DateTools
@@ -41,8 +41,8 @@
   "Return the first value for a given field from a Lucene document."
   (first (.getValues doc field)))
 
-(defn stored-field [name val]
-  "Create a tokenized, stored field."
+(defn attr-field [name val]
+  "Create an attribute field."
   (Field. name val Field$Store/YES Field$Index/NOT_ANALYZED))
 
 (defn tokenized-nonstored-field [name val]
@@ -63,7 +63,7 @@
 (defn create-doc-from-chunk [req-id parsed-chunk]
   "Produce a Lucene document from single request log chunk"
       (let [#^Document doc (Document.)]
-        (.add doc (stored-field "req-id" req-id))
+        (.add doc (attr-field "req-id" req-id))
         (.add doc (tokenized-nonstored-field "header" (:hdr parsed-chunk)))
         (load-body doc (:content parsed-chunk))))
 
@@ -80,14 +80,26 @@
 (defn index-dir [idx]
   (FSDirectory/open (java.io.File. #^String idx)))
 
+(defn extract-terms
+  [analyzer text]
+  (let [stream (.tokenStream analyzer "contents" (java.io.StringReader. text))
+        term (.addAttribute stream TermAttribute)]
+    (loop [ term-seq [] strm stream]
+      (if (not (.incrementToken strm))
+	term-seq
+	(recur (conj term-seq (.term term) ) strm )))))
+
 (defn build-query [searchstr]
-  (let [all-fields (.parse (doto (MultiFieldQueryParser. org.apache.lucene.util.Version/LUCENE_30
-                                      (into-array String ["header" "body"])
-                                      (WhitespaceAnalyzer.))
-                             (.setDefaultOperator QueryParser$Operator/OR))
-                           searchstr)]
-    (.setBoost all-fields 20)
-    all-fields
+  (let [terms (extract-terms *cleanup-analyzer* searchstr)
+	_     (println (str "search terms " terms))
+	header-query (BooleanQuery.)
+	_            (doall (map #(.add header-query (TermQuery. (Term. "header" %)) BooleanClause$Occur/SHOULD) terms))
+	body-query   (BooleanQuery.)
+	_            (doall (map #(.add body-query (TermQuery. (Term. "body" %)) BooleanClause$Occur/MUST) terms))	
+	all-fields-query (doto (BooleanQuery.)
+			   (.add header-query BooleanClause$Occur/SHOULD)
+			   (.add body-query BooleanClause$Occur/MUST))]
+    all-fields-query
   ))
 
 
@@ -101,7 +113,7 @@
 (defn search [index-file query]
   (let [reader (IndexReader/open (index-dir index-file))
         searcher (IndexSearcher. reader)]
-    (result-seq (.scoreDocs (.search searcher (build-query query) 50)) searcher)))
+    (result-seq (.scoreDocs (.search searcher (build-query query) 5000)) searcher)))
 
 (defn display-tokens
   [analyzer text]

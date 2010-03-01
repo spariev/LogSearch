@@ -21,7 +21,9 @@
 (def inc-lit
      (comp inc-rule lit))
 
-(def ws (alt (inc-lit \tab) (inc-lit \space)))
+(def ws
+     (complex [_ (alt (inc-lit \tab) (inc-lit \space))]
+	      :space))
 
 (defn word-lit [wrd]
   (lit-conc-seq (seq wrd) inc-lit))
@@ -43,7 +45,7 @@
 	       content (rep* (except anything
 				     (if open-indicator  (inc-lit open-indicator) ws)))
 	       _ (if open-indicator (inc-lit open-indicator) (opt str-indicator))]
-	      content))
+	      (apply str content)))
 
 (def field-cond
      (complex [field field-lit
@@ -53,15 +55,26 @@
 	       val   string-lit]
 	      (zipmap [:field :cond :value] (map #(apply str %) [field fcond val]))))
 
-(def root-rule
+(def attr-root-rule
     (rep* (alt ws field-cond))) ;;(alt field-cond ws)
-	      
+
+(def query-root-rule
+    (rep* (alt ws string-lit))) ;;(alt field-cond ws)
+
 
 (defn inv-doc-fn [state]
   (println "invalid document " (str (remainder-a state))))
 
 (defn data-left-fn [data-left state]
-  (println "leftover data after a valid node " (str (remainder-a state))))
+  (println "leftover data after a valid term " (str (remainder-a state))))
 
-(defn parse-conditions [string-value]
-  (remove #(= \space %) (rule-match root-rule inv-doc-fn data-left-fn (struct state-s (seq string-value) 0))))
+(defn parse-conditions
+  "Returns a seq of maps with conditions."
+  [string-value]
+  
+  (remove #(= :space %) (rule-match attr-root-rule inv-doc-fn data-left-fn (struct state-s (seq string-value) 0))))
+
+(defn parse-lucene-query
+  "Returns seq of search terms."
+  [string-value]
+  (remove #(= :space %) (rule-match query-root-rule inv-doc-fn data-left-fn (struct state-s (seq string-value) 0))))
