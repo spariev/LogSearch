@@ -18,4 +18,4 @@
 
 (defn fetch-by-id
   [coll obj-id]
-  (fetch-one coll :where { :_id (com.mongodb.ObjectId. obj-id) }))
+  (fetch-one coll :where { :_id (com.mongodb.ObjectId. obj-id)}))

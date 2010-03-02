@@ -10,6 +10,7 @@
            (org.apache.lucene.analysis SimpleAnalyzer StopAnalyzer WhitespaceAnalyzer LowerCaseFilter LetterTokenizer
 				       CachingTokenFilter StopFilter WhitespaceTokenizer CharTokenizer)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
+	   (org.apache.lucene.document CompressionTools)
            (org.apache.lucene.store FSDirectory)
 	   (org.apache.lucene.search.highlight QueryScorer NullFragmenter Fragmenter SimpleHTMLFormatter SimpleSpanFragmenter Highlighter)
            (org.apache.lucene.queryParser QueryParser$Operator
@@ -21,6 +22,7 @@
   (:use [spariev.config :as config]
 	[clojure.contrib.str-utils2 :as strutils :only [join blank?]]
 	spariev.logsearch.whitespacet
+	[spariev.logsearch.parser :as parser]
 	clojure.contrib.duck-streams
         clojure.contrib.str-utils
         clojure.contrib.seq-utils
@@ -31,18 +33,12 @@
 
 ;;; Utility functions
 
-;;(defn cleanup
-;;  [text]
-;;  (re-gsub #"[\(\),`'=]" " "
-;;	   (re-gsub #"\"" ""
-;;		    (re-gsub #"=>" " " text))))
-
 (defn get-field [#^Document doc field]
   "Return the first value for a given field from a Lucene document."
   (first (.getValues doc field)))
 
 (defn attr-field [name val]
-  "Create an attribute field."
+  "Create an attribute field - stored, not tokenized."
   (Field. name val Field$Store/YES Field$Index/NOT_ANALYZED))
 
 (defn tokenized-nonstored-field [name val]
@@ -51,21 +47,28 @@
 
 (defn tokenized-no-term-vector-field [name val]
   "Create a tokenized, non-stored field with no term-vector info."
-  (Field. #^String name #^String val Field$Store/NO Field$Index/ANALYZED Field$TermVector/NO))
-
-
-(defn load-body [#^Document doc [line & lines :as body]]
-  "Add each line from body into our Lucene document."
-  (if (seq lines)
-    (.add doc (tokenized-no-term-vector-field "body" (strutils/join " " lines))))
-    doc)
+  (doto (Field. #^String name #^String val Field$Store/NO Field$Index/ANALYZED Field$TermVector/NO)
+    (.setOmitTermFreqAndPositions true)
+    (.setOmitNorms true)))
 
 (defn create-doc-from-chunk [req-id parsed-chunk]
   "Produce a Lucene document from single request log chunk"
-      (let [#^Document doc (Document.)]
+      (let [#^Document doc (Document.)
+	    body-content (if (:content parsed-chunk)
+			   (strutils/join " " (:content parsed-chunk)) "")
+;;           compressed-body (CompressionTools/compressString body-content)
+;;           compressed-field (doto (Field. "compressed-body"
+;;                                          compressed-body Field$Store/YES)
+;;                              (.setOmitTermFreqAndPositions true)
+;;                              (.setOmitNorms true))
+	    ]
         (.add doc (attr-field "req-id" req-id))
+	(doseq [attr-name parser/*req-attrs*]
+	  (.add doc (attr-field (name attr-name) (or (-> parsed-chunk :attrs attr-name) ""))))
         (.add doc (tokenized-nonstored-field "header" (:hdr parsed-chunk)))
-        (load-body doc (:content parsed-chunk))))
+	(.add doc (tokenized-no-term-vector-field "body" body-content))
+;;	(.add doc compressed-field)
+	doc))
 
 (def *cleanup-analyzer*
      (proxy [org.apache.lucene.analysis.Analyzer] []

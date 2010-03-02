@@ -37,12 +37,9 @@
 
 (defn save-req
   [req-lines parsed-chunk config-id]
-  (let [gridfs-file (db/pack-into-file (fs-name-for-config config-id) (rest req-lines))
-	{:keys [hdr attrs]} parsed-chunk]
+  (let [gridfs-file (db/pack-into-file (fs-name-for-config config-id) (rest req-lines))]
     (insert! (db-name-for-config config-id)
-	     {:hdr hdr
-	      :attr attrs
-	      :file_id (str (gridfs-file :_id))})))
+            {:file_id (str (gridfs-file :_id))})))
 
 (defn process-request-log [config-id index-writer log-chunk]
   (if (and (> (count log-chunk) 1) (processing-line? (first log-chunk)))
