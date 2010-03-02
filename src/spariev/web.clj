@@ -36,7 +36,7 @@
       [:div
        [:p (request-rec :hdr) [:a {:class "show-more-link" :href "#" :rel (str "/event/" config-id "/" obj-id "?query=" (URLEncoder/encode query "UTF-8") )} ;;"/" 
 	    "Show ..."]]       
-       [:p {:class "detailed-container" :style "visibility:hidden;"}	]])))
+       [:p {:class "detailed-container hidden"}]])))
 
 (defn search-hit
   "return html for highlighted body of specified request"
