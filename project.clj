@@ -9,6 +9,9 @@
 			 [org.clojars.sanityinc/congomongo "0.1.1-SNAPSHOT"]
 			 #_[org.clojars.somnium/congomongo "0.1.1-SNAPSHOT"]
 			 [spariev/chrono "1.0.0-SNAPSHOT"]
-			 ]
+			 [fastutil/fastutil "5.0.9"]
+			 [log4j/log4j "1.2.14"]
+			 [com.kamikaze/kamikaze "2.0.0"]
+			 [com.browseengine/bobo-browse "2.5.0-rc1"]]
 	  :dev-dependencies [[leiningen/lein-swank "1.1.0"]]
 	  :main spariev.web)
