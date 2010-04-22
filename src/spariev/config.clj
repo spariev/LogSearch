@@ -40,6 +40,13 @@
   (let [{:keys [server-id app-id]} (get-config config-id)]
     (str "tmp" path-sep (name server-id) path-sep (name app-id) path-sep "idx" )))
 
+(defn db-path-for-config
+  [config-id]
+  (let [{:keys [server-id app-id]} (get-config config-id)]
+    (str "tmp" path-sep
+	 "cupboard_"
+	 (name server-id) "_" (name app-id) "_db" )))
+
 (defn db-name-for-config*
   [config-id]
   (keyword ((get-config config-id) :server-id)))

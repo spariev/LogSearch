@@ -37,9 +37,6 @@
 (def str-indicator
      (alt (inc-lit \") (inc-lit \')))
 
-(def unescaped-string
-     (rep* (except anything (alt ws str-indicator))))
-
 (def string-lit
      (complex [open-indicator (opt str-indicator)
 	       content (rep* (except anything

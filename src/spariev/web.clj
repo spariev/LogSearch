@@ -8,6 +8,7 @@
 	compojure
 	somnium.congomongo)
   (:import (java.net URLEncoder))
+  (:require [cupboard.core :as cb])
   (:gen-class))
 
 #_(set! *warn-on-reflection* true)
@@ -18,7 +19,8 @@
     (do
       (println)
       (println (str "Processing " (request :uri)
-		    " (for " (request :remote-addr) " at " (chrono/format-date (chrono/now) :db-date-time)
+		    " (for " (request :remote-addr) " at "
+		    (chrono/format-date (chrono/now) :db-date-time)
 		    ") [" (request :request-method) "]"))
       (println (str "  Params: " (request :params)))
       (println)
@@ -27,37 +29,37 @@
 
 (defn format-search-hit
   [config-id query search-result]
-  (let
-      [obj-id  (first search-result)
-       db-name (db-name-for-config config-id)
- ;      _ (println (str query " -> " obj-id " -> " (second search-result)))
-       request-rec (fetch-by-id db-name obj-id)]
-    (do
-      [:div
-       [:p (request-rec :hdr) [:a {:class "show-more-link" :href "#" :rel (str "/event/" config-id "/" obj-id "?query=" (URLEncoder/encode query "UTF-8") )} ;;"/" 
-	    "Show ..."]]       
-       [:p {:class "detailed-container hidden"}]])))
+  (let [{:keys [id header]}  search-result]
+    [:div
+     [:p header
+      [:a {:class "show-more-link" :href "#"
+	   :rel (str "/event/" config-id "/" id "?query="
+		     (URLEncoder/encode query "UTF-8") )} "Show ..."]]
+     [:p {:class "detailed-container hidden"}]]))
 
 (defn search-hit
   "return html for highlighted body of specified request"
   [request]
   (let [{:keys [config-id query obj-id]} (request :params)
-	db-name (db-name-for-config config-id)
-	_      (somnium.congomongo/mongo! :db db-name)
-	req (fetch-by-id db-name obj-id)
-	body-content (unpack-from-file (fs-name-for-config config-id) (req :file_id))
-	highlighted-body (highlight body-content query)]    
+	body-content (cb/with-open-cupboard
+		       [cb-db (db-path-for-config config-id)]
+		       (load-log-entry cb-db obj-id))
+	highlighted-body (highlight body-content query)]
     (html [:pre highlighted-body])))
-  
+
 
 (defn do-search
   [config-id query]
-  (do
-    (somnium.congomongo/mongo! :db (db-name-for-config config-id))
-    (let [search-results (bench "Lucene search " (search (idx-path-for-config config-id) query))]
-      (bench "Rendering " (html
-			   [:div.results-count [:p (str (count search-results) " entries found")]]
-			   (doall (map (partial format-search-hit config-id query) search-results)))))))
+  (let [search-results (bench "Lucene search "
+			      (search (idx-path-for-config config-id) query))]
+    (println "results" search-results)
+    (bench
+     "Rendering "
+     (html
+      [:div.results-count [:p (str (count search-results) " entries found")]]
+      (doall
+       (map (partial format-search-hit config-id query)
+	    search-results))))))
 
 (defn search-handler
   [request]
@@ -89,8 +91,11 @@
       [:div [:div.search
 	     (form-to
 	      [:post "/search"]
-	      [:p "config-id " (text-field {:size 10 :value (or config-id "tmadmin")} :config-id)]
-	       [:p "query "     (text-field {:size 50  :value (or query "") } :query)]
+	      [:p "config-id "
+	       (text-field {:size 10 :value (or config-id "tmadmin")}
+			   :config-id)]
+	       [:p "query " (text-field {:size 50  :value (or query "") }
+					:query)]
 	       (submit-button "Query"))]
      "\n" [:p query ] "\n"
     (when query
@@ -104,7 +109,7 @@
 	target-date (chrono/parse-date date :compact-date)
 	idx-agent (agent config-id)]
     (do
-      (send-off idx-agent index-app-logs target-date)
+      (send-off idx-agent index-app-logs date)
       (with-std-template "LogSearch"
 	[:h1 (str "Indexing for configuration " config-id " and date "
 		  (chrono/format-date target-date :short-date)  " started")]))))

@@ -1,21 +1,28 @@
 (ns spariev.logsearch.db
-  (:use somnium.congomongo
-	[clojure.contrib.str-utils2 :as strutils :only [join]])
-  (:import (org.apache.lucene.document CompressionTools)))
+  (:use [clojure.contrib.str-utils2 :as strutils :only [join]]
+	[cupboard.utils])
+  (:require [cupboard.core :as cb])
+  (:import (org.apache.lucene.document CompressionTools)
+	   (com.sleepycat.je DatabaseEntry)))
 
 (def path-sep
       (java.io.File/separator))
 
-(defn pack-into-file [fs lines]
-  (insert-file! fs (CompressionTools/compressString (strutils/join "\n" lines))))
+(cb/defpersist log-entry
+  ((:id :index :unique)
+   (:body)))
 
-(defn unpack-from-file [fs file-id]
-  (let [a-file (fetch-one-file fs :where { :_id (com.mongodb.ObjectId. file-id) })
-	byte-stream (java.io.ByteArrayOutputStream. (:length a-file))]
-    (do
-      (write-file-to fs a-file byte-stream)
-      (CompressionTools/decompressString (.toByteArray byte-stream)))))
 
-(defn fetch-by-id
-  [coll obj-id]
-  (fetch-one coll :where { :_id (com.mongodb.ObjectId. obj-id)}))
+(defn save-log-entry [cb-db lines]
+  (let [entry-id (java.util.UUID/randomUUID)]
+    (cb/make-instance
+     log-entry
+     [entry-id
+      (DatabaseEntry.
+       (CompressionTools/compressString (strutils/join "\n" lines)))]
+     :cupboard cb-db)
+    entry-id))
+
+(defn load-log-entry [cb-db entry-id]
+  (let [log-entry (cb/query (= :id entry-id) :cupboard cb-db)]
+    (CompressionTools/decompressString (:body log-entry))))
